@@ -1,9 +1,16 @@
+using Microsoft.EntityFrameworkCore;
+using WorkApi;
+using WorkApi.Models;
+
 var builder = WebApplication.CreateBuilder(args);
 
 // Add services to the container.
 // Learn more about configuring Swagger/OpenAPI at https://aka.ms/aspnetcore/swashbuckle
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
+
+string connection = builder.Configuration.GetConnectionString("DefaultConnection")?? "";
+builder.Services.AddDbContext<WorkAppContext>(x => x.UseSqlite(connection));
 
 var app = builder.Build();
 
@@ -35,6 +42,18 @@ app.MapGet("/weatherforecast", () =>
 })
 .WithName("GetWeatherForecast")
 .WithOpenApi();
+
+app.MapGet("/api/jobs", (WorkAppContext db) => 
+{
+    return db.Jobs.ToList();
+});
+
+app.MapGet("/api/addJob/{name}", (WorkAppContext db, string name) => 
+{
+    Job model = db.Jobs.Add(new Job { Name = name, DateTimeOfNotification = DateTime.Now}).Entity;
+    db.SaveChanges();
+    return model.Id;
+});
 
 app.Run();
 
